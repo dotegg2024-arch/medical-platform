@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediConnect - 医療コミュニケーションプラットフォーム</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        :root {
+            --primary-50: #e6f3ff;
+            --primary-100: #b3d9ff;
+            --primary-500: #0073e6;
+            --primary-600: #005bb3;
+            --accent-100: #b3ffed;
+            --accent-500: #00e6af;
+            --accent-600: #00b389;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --neutral-50: #f8fafc;
+            --neutral-100: #f1f5f9;
+            --neutral-200: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --text-inverse: #fff;
+            --bg-primary: #f0f9ff;
+            --bg-card: #fff;
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0/0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0/0.1);
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+            --radius-full: 9999px
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: var(--radius-lg);
+            border: none;
+            cursor: pointer;
+            transition: all 150ms ease
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+            color: var(--text-inverse)
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg)
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--neutral-200)
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--primary-500)
+        }
+
+        .btn-danger {
+            background: #fee2e2;
+            color: #dc2626
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.8125rem
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            padding: 1.5rem
+        }
+
+        .input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 0.9375rem;
+            border: 1px solid var(--neutral-200);
+            border-radius: var(--radius-lg);
+            background: var(--bg-card)
+        }
+
+        .input:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(0, 115, 230, 0.1)
+        }
+
+        select.input {
+            cursor: pointer
+        }
+
+        /* Drum Picker Styles */
+        .drum-picker {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            height: 150px;
+            overflow: hidden;
+            background: var(--neutral-50);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--neutral-200);
+        }
+
+        .drum-picker::before,
+        .drum-picker::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 50px;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .drum-picker::before {
+            top: 0;
+            background: linear-gradient(to bottom, var(--neutral-50), transparent);
+        }
+
+        .drum-picker::after {
+            bottom: 0;
+            background: linear-gradient(to top, var(--neutral-50), transparent);
+        }
+
+        .drum-highlight {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 40px;
+            transform: translateY(-50%);
+            background: var(--primary-50);
+            border-top: 2px solid var(--primary-500);
+            border-bottom: 2px solid var(--primary-500);
+            z-index: 1;
+        }
+
+        .drum-scroll {
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            padding: 55px 0;
+            z-index: 3;
+        }
+
+        .drum-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .drum-item {
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            scroll-snap-align: center;
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            transition: all 150ms;
+        }
+
+        .drum-item.selected {
+            color: var(--primary-600);
+            font-weight: 600;
+        }
+
+        /* Line Chart Styles */
+        .line-chart-container {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-full);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 150ms;
+        }
+
+        .legend-item.active {
+            border-color: currentColor;
+        }
+
+        .legend-item.inactive {
+            opacity: 0.4;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .chart-svg {
+            width: 100%;
+            height: 200px;
+        }
+
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-full);
+            background: linear-gradient(135deg, var(--primary-500), var(--accent-500));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-inverse);
+            font-weight: 600;
+            flex-shrink: 0
+        }
+
+        .avatar-lg {
+            width: 64px;
+            height: 64px;
+            font-size: 1.25rem
+        }
+
+        .badge {
+            display: inline-flex;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border-radius: var(--radius-full)
+        }
+
+        .badge-primary {
+            background: var(--primary-100);
+            color: var(--primary-600)
+        }
+
+        .badge-success {
+            background: #dcfce7;
+            color: #166534
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e
+        }
+
+        .badge-error {
+            background: #fee2e2;
+            color: #991b1b
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh
+        }
+
+        .sidebar {
+            width: 260px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--neutral-100);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-600);
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--neutral-100)
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.375rem;
+            flex: 1
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            text-decoration: none;
+            position: relative
+        }
+
+        .sidebar-link:hover,
+        .sidebar-link.active {
+            color: var(--primary-600);
+            background: var(--primary-50)
+        }
+
+        .notification-dot {
+            position: absolute;
+            right: 12px;
+            width: 8px;
+            height: 8px;
+            background: var(--error);
+            border-radius: 50%
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary)
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md)
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem
+        }
+
+        .stat-icon.primary {
+            background: var(--primary-100);
+            color: var(--primary-600)
+        }
+
+        .stat-icon.accent {
+            background: var(--accent-100);
+            color: var(--accent-600)
+        }
+
+        .stat-icon.success {
+            background: #dcfce7;
+            color: #16a34a
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary)
+        }
+
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #e6f3ff 0%, #b3d9ff 50%, #e6fff9 100%);
+            padding: 1rem
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            background: white;
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            padding: 2.5rem
+        }
+
+        .login-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary-600);
+            margin-bottom: 0.5rem
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem
+        }
+
+        .chat-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 1.5rem;
+            height: calc(100vh - 140px)
+        }
+
+        .contacts-panel {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column
+        }
+
+        .contacts-header {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--neutral-100);
+            font-weight: 600
+        }
+
+        .contacts-list {
+            flex: 1;
+            overflow-y: auto
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 150ms ease
+        }
+
+        .contact-item:hover,
+        .contact-item.active {
+            background: var(--primary-50)
+        }
+
+        .chat-panel {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            flex-direction: column
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--neutral-100)
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem
+        }
+
+        .message {
+            display: flex;
+            gap: 0.5rem;
+            max-width: 70%
+        }
+
+        .message.sent {
+            align-self: flex-end;
+            flex-direction: row-reverse
+        }
+
+        .message-content {
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-lg);
+            font-size: 0.9375rem
+        }
+
+        .message.received .message-content {
+            background: var(--neutral-100)
+        }
+
+        .message.sent .message-content {
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+            color: white
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 0.75rem;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--neutral-100)
+        }
+
+        .user-footer {
+            margin-top: auto;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--neutral-100)
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: var(--radius-lg);
+            transition: background 150ms
+        }
+
+        .user-info:hover {
+            background: var(--neutral-50)
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted)
+        }
+
+        .chart-container {
+            background: var(--bg-card);
+            border-radius: var(--radius-xl);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem
+        }
+
+        .chart-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.5rem;
+            height: 150px;
+            padding-top: 1rem
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(to top, var(--primary-500), var(--primary-100));
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
+            min-width: 30px;
+            position: relative
+        }
+
+        .chart-bar-label {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.625rem;
+            color: var(--text-muted)
+        }
+
+        .chart-bar-value {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            font-weight: 500
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--neutral-200);
+            border-radius: var(--radius-full);
+            overflow: hidden
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-500), var(--primary-500));
+            border-radius: var(--radius-full)
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, createContext, useContext } = React;
+
+        // データ初期化
+        const initData = () => {
+            const saved = localStorage.getItem('mediconnect_data');
+            if (saved) return JSON.parse(saved);
+            return {
+                patients: [
+                    { id: 'p1', email: 'tanaka@demo.com', password: 'demo123', name: '田中 太郎', type: 'patient', dateOfBirth: '1965-03-15', bloodType: 'A', team: ['s1', 's2'], phone: '090-1234-5678' },
+                    { id: 'p2', email: 'suzuki@demo.com', password: 'demo123', name: '鈴木 花子', type: 'patient', dateOfBirth: '1978-08-22', bloodType: 'O', team: ['s1'], phone: '090-8765-4321' },
+                ],
+                staff: [
+                    { id: 's1', email: 'yamada@hospital.com', password: 'staff123', name: '山田 医師', type: 'staff', role: '主治医', department: '内科', patients: ['p1', 'p2'] },
+                    { id: 's2', email: 'sato@hospital.com', password: 'staff123', name: '佐藤 リハビリ士', type: 'staff', role: '理学療法士', department: 'リハビリテーション科', patients: ['p1'] },
+                ],
+                messages: [
+                    { id: 'm1', senderId: 's1', receiverId: 'p1', content: '田中さん、本日の診察ありがとうございました。血圧が少し高めでしたので、引き続き食事に気をつけてください。', timestamp: '2026-01-15T10:30:00', read: true },
+                    { id: 'm2', senderId: 'p1', receiverId: 's1', content: '山田先生、ありがとうございます。塩分控えめに気をつけます。', timestamp: '2026-01-15T11:00:00', read: true },
+                    { id: 'm3', senderId: 's2', receiverId: 'p1', content: 'リハビリのメニューを更新しました。無理のない範囲で続けてください。', timestamp: '2026-01-15T14:00:00', read: false },
+                ],
+                healthRecords: [
+                    { id: 'h1', patientId: 'p1', date: '2026-01-16', bloodPressureHigh: 138, bloodPressureLow: 85, pulse: 72, temperature: 36.4, weight: 68.5, notes: '朝食後' },
+                    { id: 'h2', patientId: 'p1', date: '2026-01-15', bloodPressureHigh: 142, bloodPressureLow: 88, pulse: 75, temperature: 36.5, weight: 68.3, notes: '' },
+                    { id: 'h3', patientId: 'p1', date: '2026-01-14', bloodPressureHigh: 135, bloodPressureLow: 82, pulse: 70, temperature: 36.3, weight: 68.7, notes: '' },
+                    { id: 'h4', patientId: 'p1', date: '2026-01-13', bloodPressureHigh: 140, bloodPressureLow: 86, pulse: 73, temperature: 36.4, weight: 68.6, notes: '' },
+                    { id: 'h5', patientId: 'p1', date: '2026-01-12', bloodPressureHigh: 136, bloodPressureLow: 84, pulse: 71, temperature: 36.5, weight: 68.4, notes: '' },
+                ],
+                appointments: [
+                    { id: 'a1', patientId: 'p1', staffId: 's1', date: '2026-01-20', time: '10:00', type: '定期診察', status: 'scheduled', notes: '血液検査あり' },
+                    { id: 'a2', patientId: 'p1', staffId: 's2', date: '2026-01-18', time: '14:00', type: 'リハビリ', status: 'scheduled', notes: '' },
+                ],
+                rehabMenus: [
+                    { id: 'r1', patientId: 'p1', name: '膝関節ストレッチ', description: '座った状態で膝を伸ばし、つま先を手前に引きます。', frequency: '1日3回', duration: '各20秒×3セット', status: 'active', progress: [{ date: '2026-01-16', completed: true }, { date: '2026-01-15', completed: true }, { date: '2026-01-14', completed: false }] },
+                    { id: 'r2', patientId: 'p1', name: 'ウォーキング', description: '平坦な道を自分のペースで歩きます。', frequency: '1日1回', duration: '15〜20分', status: 'active', progress: [{ date: '2026-01-16', completed: false }, { date: '2026-01-15', completed: true }] },
+                ],
+            };
+        };
+
+        // Context
+        const AppContext = createContext(null);
+        function AppProvider({ children }) {
+            const [user, setUser] = useState(null);
+            const [data, setData] = useState(initData);
+
+            useEffect(() => { localStorage.setItem('mediconnect_data', JSON.stringify(data)); }, [data]);
+
+            const login = (email, password) => {
+                const p = data.patients.find(x => x.email === email && x.password === password);
+                if (p) { setUser({ ...p }); return true; }
+                const s = data.staff.find(x => x.email === email && x.password === password);
+                if (s) { setUser({ ...s }); return true; }
+                return false;
+            };
+            const logout = () => setUser(null);
+            const isPatient = user?.type === 'patient';
+            const getContacts = () => isPatient ? data.staff.filter(s => user.team.includes(s.id)) : data.patients.filter(p => user.patients.includes(p.id));
+            const getMessages = (pid) => data.messages.filter(m => (m.senderId === user?.id && m.receiverId === pid) || (m.senderId === pid && m.receiverId === user?.id)).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            const sendMessage = (rid, content) => setData(d => ({ ...d, messages: [...d.messages, { id: `m${Date.now()}`, senderId: user.id, receiverId: rid, content, timestamp: new Date().toISOString(), read: false }] }));
+            const getUnreadCount = () => data.messages.filter(m => m.receiverId === user?.id && !m.read).length;
+            const markRead = (pid) => setData(d => ({ ...d, messages: d.messages.map(m => m.senderId === pid && m.receiverId === user?.id ? { ...m, read: true } : m) }));
+            const getHealthRecords = (pid) => data.healthRecords.filter(r => r.patientId === (pid || user?.id)).sort((a, b) => new Date(b.date) - new Date(a.date));
+            const addHealthRecord = (r) => setData(d => ({ ...d, healthRecords: [...d.healthRecords, { ...r, id: `h${Date.now()}`, patientId: user.id }] }));
+            const getAppointments = () => data.appointments.filter(a => isPatient ? a.patientId === user?.id : a.staffId === user?.id || a.patientId && user.patients?.includes(a.patientId));
+            const addAppointment = (a) => setData(d => ({ ...d, appointments: [...d.appointments, { ...a, id: `a${Date.now()}`, status: 'scheduled' }] }));
+            const updateAppointment = (id, updates) => setData(d => ({ ...d, appointments: d.appointments.map(a => a.id === id ? { ...a, ...updates } : a) }));
+            const getRehabMenus = (pid) => data.rehabMenus.filter(r => r.patientId === (pid || user?.id));
+            const addRehabMenu = (m) => setData(d => ({ ...d, rehabMenus: [...d.rehabMenus, { ...m, id: `r${Date.now()}`, status: 'active', progress: [] }] }));
+            const toggleRehabProgress = (rid) => {
+                const today = new Date().toISOString().split('T')[0];
+                setData(d => ({
+                    ...d, rehabMenus: d.rehabMenus.map(m => {
+                        if (m.id !== rid) return m;
+                        const existing = m.progress.find(p => p.date === today);
+                        if (existing) return { ...m, progress: m.progress.map(p => p.date === today ? { ...p, completed: !p.completed } : p) };
+                        return { ...m, progress: [...m.progress, { date: today, completed: true }] };
+                    })
+                }));
+            };
+            const updateProfile = (updates) => {
+                if (isPatient) setData(d => ({ ...d, patients: d.patients.map(p => p.id === user.id ? { ...p, ...updates } : p) }));
+                else setData(d => ({ ...d, staff: d.staff.map(s => s.id === user.id ? { ...s, ...updates } : s) }));
+                setUser(u => ({ ...u, ...updates }));
+            };
+            const exportCSV = () => {
+                const records = getHealthRecords();
+                const csv = 'data:text/csv;charset=utf-8,日付,血圧(上),血圧(下),脈拍,体温,体重,メモ\n' + records.map(r => `${r.date},${r.bloodPressureHigh},${r.bloodPressureLow},${r.pulse},${r.temperature},${r.weight},"${r.notes || ''}"`).join('\n');
+                const link = document.createElement('a'); link.href = encodeURI(csv); link.download = 'health_records.csv'; link.click();
+            };
+
+            return <AppContext.Provider value={{ user, data, login, logout, isPatient, getContacts, getMessages, sendMessage, getUnreadCount, markRead, getHealthRecords, addHealthRecord, getAppointments, addAppointment, updateAppointment, getRehabMenus, addRehabMenu, toggleRehabProgress, updateProfile, exportCSV }}>{children}</AppContext.Provider>;
+        }
+        const useApp = () => useContext(AppContext);
+
+        // Icons
+        const Icon = ({ name }) => {
+            const p = { home: <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />, message: <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />, heart: <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />, calendar: <><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></>, activity: <polyline points="22,12 18,12 15,21 9,3 6,12 2,12" />, send: <><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></>, pulse: <path d="M22 12h-4l-3 9L9 3l-3 9H2" />, plus: <><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>, check: <polyline points="20 6 9 17 4 12" />, x: <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>, download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></>, user: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></> };
+            return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">{p[name]}</svg>;
+        };
+
+        // Modal
+        const Modal = ({ show, onClose, title, children }) => show ? (
+            <div className="modal-overlay" onClick={onClose}><div className="modal" onClick={e => e.stopPropagation()}><div className="modal-header"><h3 className="modal-title">{title}</h3><button className="close-btn" onClick={onClose}>×</button></div>{children}</div></div>
+        ) : null;
+
+        // Login
+        function Login() {
+            const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState(''); const { login } = useApp();
+            const handleSubmit = (e) => { e.preventDefault(); if (!login(email, password)) setError('認証エラー'); };
+            const demo = (t) => { if (t === 'p') { setEmail('tanaka@demo.com'); setPassword('demo123'); } else { setEmail('yamada@hospital.com'); setPassword('staff123'); } };
+            return (
+                <div className="login-page"><div className="login-container"><div style={{ textAlign: 'center', marginBottom: '2rem' }}><div className="login-logo"><Icon name="pulse" /><span>MediConnect</span></div><p style={{ color: 'var(--text-secondary)' }}>医療コミュニケーションプラットフォーム</p></div>
+                    <form onSubmit={handleSubmit}><div style={{ marginBottom: '1rem' }}><label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>メールアドレス</label><input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} required /></div>
+                        <div style={{ marginBottom: '1rem' }}><label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>パスワード</label><input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} required /></div>
+                        {error && <p style={{ color: 'var(--error)', fontSize: '0.875rem', marginBottom: '1rem' }}>{error}</p>}<button className="btn btn-primary" type="submit" style={{ width: '100%' }}>ログイン</button></form>
+                    <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--neutral-100)', textAlign: 'center' }}><p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>デモアカウント</p>
+                        <div style={{ display: 'flex', gap: '0.75rem' }}><button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => demo('p')}>患者</button><button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => demo('s')}>医療従事者</button></div></div></div></div>
+            );
+        }
+
+        // Layout
+        function Layout({ children, page, setPage }) {
+            const { user, logout, isPatient, getUnreadCount } = useApp();
+            const [showProfile, setShowProfile] = useState(false);
+            const menu = isPatient ? [{ id: 'dashboard', label: 'ダッシュボード', icon: 'home' }, { id: 'messages', label: 'メッセージ', icon: 'message' }, { id: 'health', label: '健康記録', icon: 'heart' }, { id: 'appointments', label: '予約', icon: 'calendar' }, { id: 'rehab', label: 'リハビリ', icon: 'activity' }] : [{ id: 'dashboard', label: 'ダッシュボード', icon: 'home' }, { id: 'messages', label: 'メッセージ', icon: 'message' }, { id: 'appointments', label: '予約管理', icon: 'calendar' }];
+            const unread = getUnreadCount();
+            return (
+                <div className="layout"><aside className="sidebar"><div className="sidebar-brand"><Icon name="pulse" /><span>MediConnect</span></div><nav className="sidebar-nav">{menu.map(i => (<a key={i.id} className={`sidebar-link ${page === i.id ? 'active' : ''}`} onClick={() => setPage(i.id)}><Icon name={i.icon} />{i.label}{i.id === 'messages' && unread > 0 && <span className="notification-dot" />}</a>))}</nav>
+                    <div className="user-footer"><div className="user-info" onClick={() => setShowProfile(true)}><div className="avatar">{user?.name?.charAt(0)}</div><div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name}</div><div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{isPatient ? '患者' : user?.role}</div></div></div>
+                        <button className="btn btn-ghost btn-sm" onClick={logout} style={{ width: '100%' }}>ログアウト</button></div></aside><main className="main-content">{children}</main>
+                    <ProfileModal show={showProfile} onClose={() => setShowProfile(false)} />
+                </div>
+            );
+        }
+
+        // Profile Modal
+        function ProfileModal({ show, onClose }) {
+            const { user, updateProfile, isPatient } = useApp();
+            const [name, setName] = useState(user?.name || '');
+            const [phone, setPhone] = useState(user?.phone || '');
+            useEffect(() => { setName(user?.name || ''); setPhone(user?.phone || ''); }, [user, show]);
+            const save = () => { updateProfile({ name, phone }); onClose(); };
+            return (<Modal show={show} onClose={onClose} title="プロフィール編集">
+                <div style={{ marginBottom: '1rem' }}><label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>名前</label><input className="input" value={name} onChange={e => setName(e.target.value)} /></div>
+                <div style={{ marginBottom: '1rem' }}><label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>電話番号</label><input className="input" value={phone} onChange={e => setPhone(e.target.value)} /></div>
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}><button className="btn btn-secondary" onClick={onClose}>キャンセル</button><button className="btn btn-primary" onClick={save}>保存</button></div>
+            </Modal>);
+        }
+
+        // Dashboard
+        function Dashboard() {
+            const { user, isPatient, getContacts, getHealthRecords, getAppointments, getRehabMenus } = useApp();
+            const contacts = getContacts(); const records = getHealthRecords(); const apts = getAppointments().filter(a => a.status === 'scheduled'); const menus = getRehabMenus(); const latest = records[0];
+            return (<><div className="page-header"><div><h1 className="page-title">こんにちは、{user?.name?.split(' ')[0]}さん</h1><p className="page-subtitle">{isPatient ? '今日も健康管理を頑張りましょう' : '本日の予定をご確認ください'}</p></div></div>
+                <div className="stats-grid"><div className="stat-card"><div className="stat-icon primary"><Icon name="message" /></div><div className="stat-value">{contacts.length}</div><div className="stat-label">{isPatient ? '医療チーム' : '担当患者'}</div></div>
+                    <div className="stat-card"><div className="stat-icon accent"><Icon name="calendar" /></div><div className="stat-value">{apts.length}</div><div className="stat-label">今後の予約</div></div>
+                    {isPatient && <div className="stat-card"><div className="stat-icon success"><Icon name="activity" /></div><div className="stat-value">{menus.length}</div><div className="stat-label">リハビリメニュー</div></div>}</div>
+                <div className="dashboard-grid">{latest && isPatient && (<div className="card"><h3 style={{ marginBottom: '1rem', fontWeight: 600 }}>最新の健康データ</h3><div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '1rem' }}>
+                    <div><span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>血圧</span><div style={{ fontSize: '1.125rem', fontWeight: 600 }}>{latest.bloodPressureHigh}/{latest.bloodPressureLow}</div></div>
+                    <div><span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>脈拍</span><div style={{ fontSize: '1.125rem', fontWeight: 600 }}>{latest.pulse} bpm</div></div>
+                    <div><span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>体温</span><div style={{ fontSize: '1.125rem', fontWeight: 600 }}>{latest.temperature}°C</div></div>
+                    <div><span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>体重</span><div style={{ fontSize: '1.125rem', fontWeight: 600 }}>{latest.weight} kg</div></div></div></div>)}
+                    <div className="card"><h3 style={{ marginBottom: '1rem', fontWeight: 600 }}>{isPatient ? '担当チーム' : '担当患者'}</h3>{contacts.map(c => (<div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: 'var(--neutral-50)', borderRadius: 'var(--radius-lg)', marginBottom: '0.5rem' }}><div className="avatar">{c.name.charAt(0)}</div><div><div style={{ fontWeight: 500 }}>{c.name}</div><div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{c.role || '患者'}</div></div></div>))}</div></div></>);
+        }
+
+        // Messages
+        function Messages() {
+            const { user, getContacts, getMessages, sendMessage, markRead } = useApp();
+            const [sel, setSel] = useState(null); const [msg, setMsg] = useState('');
+            const contacts = getContacts(); const msgs = sel ? getMessages(sel.id) : [];
+            const selectContact = (c) => { setSel(c); markRead(c.id); };
+            const send = (e) => { e.preventDefault(); if (!msg.trim() || !sel) return; sendMessage(sel.id, msg.trim()); setMsg(''); };
+            return (<><div className="page-header"><div><h1 className="page-title">メッセージ</h1></div></div>
+                <div className="chat-container"><div className="contacts-panel"><div className="contacts-header">連絡先</div><div className="contacts-list">{contacts.map(c => (<div key={c.id} className={`contact-item ${sel?.id === c.id ? 'active' : ''}`} onClick={() => selectContact(c)}><div className="avatar">{c.name.charAt(0)}</div><div><div style={{ fontWeight: 500 }}>{c.name}</div><div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{c.role || '患者'}</div></div></div>))}</div></div>
+                    <div className="chat-panel">{sel ? (<><div className="chat-header"><div className="avatar">{sel.name.charAt(0)}</div><div><div style={{ fontWeight: 600 }}>{sel.name}</div><div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{sel.role || '患者'}</div></div></div>
+                        <div className="chat-messages">{msgs.map(m => (<div key={m.id} className={`message ${m.senderId === user.id ? 'sent' : 'received'}`}><div className="message-content">{m.content}</div></div>))}</div>
+                        <form className="chat-input" onSubmit={send}><input className="input" value={msg} onChange={e => setMsg(e.target.value)} placeholder="メッセージを入力..." /><button className="btn btn-primary" type="submit"><Icon name="send" /></button></form></>) : (<div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>連絡先を選択</div>)}</div></div></>);
+        }
+
+        // Improved Drum Picker Component
+        function DrumPicker({ value, onChange, min, max, step = 1, label, unit }) {
+            const scrollRef = React.useRef(null);
+            const items = [];
+            for (let i = min; i <= max; i += step) items.push(step < 1 ? parseFloat(i.toFixed(1)) : i);
+            const currentIdx = items.findIndex(v => Math.abs(v - value) < 0.01);
+
+            React.useEffect(() => {
+                if (scrollRef.current && currentIdx >= 0) {
+                    scrollRef.current.scrollTop = currentIdx * 44;
+                }
+            }, []);
+
+            const handleScroll = () => {
+                if (!scrollRef.current) return;
+                const newIdx = Math.round(scrollRef.current.scrollTop / 44);
+                if (items[newIdx] !== undefined && items[newIdx] !== value) {
+                    onChange(items[newIdx]);
+                }
+            };
+
+            const handleClick = (item) => {
+                onChange(item);
+                const idx = items.indexOf(item);
+                if (scrollRef.current) scrollRef.current.scrollTo({ top: idx * 44, behavior: 'smooth' });
+            };
+
+            return (
+                <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 500 }}>{label}</div>
+                    <div style={{ position: 'relative', height: 132, background: 'var(--neutral-50)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--neutral-200)', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 44, transform: 'translateY(-50%)', background: 'var(--primary-50)', borderTop: '2px solid var(--primary-500)', borderBottom: '2px solid var(--primary-500)', zIndex: 1, pointerEvents: 'none' }} />
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 44, background: 'linear-gradient(to bottom, var(--neutral-50), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 44, background: 'linear-gradient(to top, var(--neutral-50), transparent)', zIndex: 2, pointerEvents: 'none' }} />
+                        <div ref={scrollRef} onScroll={handleScroll} style={{ height: '100%', overflowY: 'scroll', scrollSnapType: 'y mandatory', paddingTop: 44, paddingBottom: 44, scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                            {items.map((item, i) => (
+                                <div key={i} onClick={() => handleClick(item)} style={{
+                                    height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    scrollSnapAlign: 'center', fontSize: Math.abs(item - value) < 0.01 ? '1.5rem' : '1rem',
+                                    fontWeight: Math.abs(item - value) < 0.01 ? 700 : 400,
+                                    color: Math.abs(item - value) < 0.01 ? 'var(--primary-600)' : 'var(--text-muted)',
+                                    cursor: 'pointer', transition: 'all 100ms', position: 'relative', zIndex: 3
+                                }}>
+                                    {step < 1 ? item.toFixed(1) : item}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.8125rem', color: 'var(--text-secondary)', fontWeight: 500 }}>{step < 1 ? value.toFixed(1) : value} {unit}</div>
+                </div>
+            );
+        }
+
+        // Multi-axis Line Chart with Y-axis labels
+        function LineChart({ data, visibleTabs, metrics }) {
+            if (data.length === 0) return null;
+            const W = 750, H = 280, PL = 50, PR = 50, PT = 30, PB = 35;
+            const chartW = W - PL - PR, chartH = H - PT - PB;
+
+            const activeMetrics = metrics.filter(m => {
+                if (m.key === 'bloodPressureHigh' || m.key === 'bloodPressureLow') return visibleTabs.includes('bp');
+                return visibleTabs.includes(m.key);
+            });
+
+            if (activeMetrics.length === 0) return <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>表示する項目を選択</div>;
+
+            const getX = (i) => PL + (chartW / (data.length - 1 || 1)) * i;
+
+            // Define fixed scales for each metric type
+            const scales = {
+                bp: { min: 60, max: 180, ticks: [60, 90, 120, 150, 180], color: '#ef4444', label: '血圧' },
+                pulse: { min: 40, max: 120, ticks: [40, 60, 80, 100, 120], color: '#10b981', label: '脈拍' },
+                temperature: { min: 35, max: 40, ticks: [35, 36, 37, 38, 39, 40], color: '#8b5cf6', label: '体温' },
+                weight: { min: 50, max: 90, ticks: [50, 60, 70, 80, 90], color: '#0073e6', label: '体重' }
+            };
+
+            // Determine which scale to use (prioritize bp, then others)
+            const primaryTab = visibleTabs.includes('bp') ? 'bp' : visibleTabs[0] || 'bp';
+            const primaryScale = scales[primaryTab];
+
+            const getY = (val, scaleKey) => {
+                const s = scales[scaleKey];
+                return PT + chartH - ((val - s.min) / (s.max - s.min)) * chartH;
+            };
+
+            return (
+                <svg viewBox={`0 0 ${W} ${H}`} className="chart-svg" style={{ maxWidth: '100%' }}>
+                    {/* Grid lines */}
+                    {primaryScale.ticks.map((tick, i) => (
+                        <g key={i}>
+                            <line x1={PL} y1={getY(tick, primaryTab)} x2={W - PR} y2={getY(tick, primaryTab)} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4,4" />
+                            <text x={PL - 8} y={getY(tick, primaryTab) + 4} textAnchor="end" fill={primaryScale.color} fontSize="10" fontWeight="500">{tick}</text>
+                        </g>
+                    ))}
+                    {/* Right Y-axis for secondary metric */}
+                    {visibleTabs.length > 1 && visibleTabs.filter(t => t !== primaryTab)[0] && (() => {
+                        const secTab = visibleTabs.filter(t => t !== primaryTab)[0];
+                        const secScale = scales[secTab];
+                        return secScale.ticks.map((tick, i) => (
+                            <text key={`r${i}`} x={W - PR + 8} y={getY(tick, secTab) + 4} textAnchor="start" fill={secScale.color} fontSize="10" fontWeight="500">{secTab === 'temperature' ? tick.toFixed(1) : tick}</text>
+                        ));
+                    })()}
+                    {/* X-axis labels */}
+                    {data.map((d, i) => (
+                        <text key={i} x={getX(i)} y={H - 8} textAnchor="middle" fill="#64748b" fontSize="11">{d.date.slice(5)}</text>
+                    ))}
+                    {/* Lines for each metric */}
+                    {activeMetrics.map(metric => {
+                        const scaleKey = (metric.key === 'bloodPressureHigh' || metric.key === 'bloodPressureLow') ? 'bp' : metric.key;
+                        const points = data.map((d, i) => `${getX(i)},${getY(d[metric.key], scaleKey)}`).join(' ');
+                        return (
+                            <g key={metric.key}>
+                                <polyline points={points} fill="none" stroke={metric.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                {data.map((d, i) => (
+                                    <g key={i}>
+                                        <circle cx={getX(i)} cy={getY(d[metric.key], scaleKey)} r="5" fill="white" stroke={metric.color} strokeWidth="2" />
+                                        <text x={getX(i)} y={getY(d[metric.key], scaleKey) - 10} textAnchor="middle" fill={metric.color} fontSize="9" fontWeight="600">
+                                            {metric.key === 'temperature' ? d[metric.key].toFixed(1) : d[metric.key]}
+                                        </text>
+                                    </g>
+                                ))}
+                            </g>
+                        );
+                    })}
+                </svg>
+            );
+        }
+
+        // Patient Data Table for Staff
+        function PatientDataTable({ records, patientName, onExport }) {
+            const [sortKey, setSortKey] = useState('date');
+            const [sortDir, setSortDir] = useState('desc');
+
+            const sorted = [...records].sort((a, b) => {
+                const av = a[sortKey], bv = b[sortKey];
+                if (sortDir === 'asc') return av > bv ? 1 : -1;
+                return av < bv ? 1 : -1;
+            });
+
+            const handleSort = (key) => {
+                if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+                else { setSortKey(key); setSortDir('desc'); }
+            };
+
+            const columns = [
+                { key: 'date', label: '日付' },
+                { key: 'bloodPressureHigh', label: '血圧(上)' },
+                { key: 'bloodPressureLow', label: '血圧(下)' },
+                { key: 'pulse', label: '脈拍' },
+                { key: 'temperature', label: '体温' },
+                { key: 'weight', label: '体重' },
+            ];
+
+            return (
+                <div className="card" style={{ marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                        <h4 style={{ fontWeight: 600 }}>{patientName}のバイタルデータ</h4>
+                        <button className="btn btn-sm btn-secondary" onClick={onExport}><Icon name="download" />CSV出力</button>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '2px solid var(--neutral-200)' }}>
+                                    {columns.map(col => (
+                                        <th key={col.key} onClick={() => handleSort(col.key)} style={{
+                                            padding: '0.75rem', textAlign: 'left', cursor: 'pointer', whiteSpace: 'nowrap',
+                                            color: sortKey === col.key ? 'var(--primary-600)' : 'var(--text-secondary)'
+                                        }}>
+                                            {col.label} {sortKey === col.key && (sortDir === 'asc' ? '↑' : '↓')}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {sorted.map(r => (
+                                    <tr key={r.id} style={{ borderBottom: '1px solid var(--neutral-100)' }}>
+                                        <td style={{ padding: '0.75rem', fontWeight: 500 }}>{r.date}</td>
+                                        <td style={{ padding: '0.75rem', color: r.bloodPressureHigh > 140 ? '#ef4444' : 'inherit' }}>{r.bloodPressureHigh}</td>
+                                        <td style={{ padding: '0.75rem', color: r.bloodPressureLow > 90 ? '#ef4444' : 'inherit' }}>{r.bloodPressureLow}</td>
+                                        <td style={{ padding: '0.75rem' }}>{r.pulse}</td>
+                                        <td style={{ padding: '0.75rem', color: r.temperature > 37.5 ? '#ef4444' : 'inherit' }}>{r.temperature.toFixed(1)}</td>
+                                        <td style={{ padding: '0.75rem' }}>{r.weight}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        }
+
+        // Health Records
+        function HealthRecords() {
+            const { getHealthRecords, addHealthRecord, exportCSV, isPatient, data, getContacts } = useApp();
+            const records = getHealthRecords();
+            const [show, setShow] = useState(false);
+            const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], bloodPressureHigh: 120, bloodPressureLow: 80, pulse: 72, temperature: 36.5, weight: 65 });
+            const [selectedPatient, setSelectedPatient] = useState(null);
+
+            const metrics = [
+                { key: 'bloodPressureHigh', label: '上', color: '#ef4444' },
+                { key: 'bloodPressureLow', label: '下', color: '#f97316' },
+                { key: 'pulse', label: '脈拍', color: '#10b981' },
+                { key: 'temperature', label: '体温', color: '#8b5cf6' },
+                { key: 'weight', label: '体重', color: '#0073e6' },
+            ];
+
+            const tabs = [
+                { id: 'bp', label: '血圧', colors: ['#ef4444', '#f97316'] },
+                { id: 'pulse', label: '脈拍', colors: ['#10b981'] },
+                { id: 'temperature', label: '体温', colors: ['#8b5cf6'] },
+                { id: 'weight', label: '体重', colors: ['#0073e6'] },
+            ];
+            const [visibleTabs, setVisibleTabs] = useState(['bp', 'pulse', 'temperature', 'weight']);
+
+            const toggleTab = (id) => setVisibleTabs(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
+            const submit = () => { addHealthRecord({ ...form, notes: '' }); setShow(false); };
+            const last7 = records.slice(0, 7).reverse();
+
+            // Staff: get patient list and their records
+            const patients = !isPatient ? getContacts() : [];
+            const getPatientRecords = (pid) => data.healthRecords.filter(r => r.patientId === pid).sort((a, b) => new Date(b.date) - new Date(a.date));
+            const exportPatientCSV = (pid, name) => {
+                const recs = getPatientRecords(pid);
+                const csv = 'data:text/csv;charset=utf-8,患者名,日付,血圧(上),血圧(下),脈拍,体温,体重\n' + recs.map(r => `${name},${r.date},${r.bloodPressureHigh},${r.bloodPressureLow},${r.pulse},${r.temperature},${r.weight}`).join('\n');
+                const link = document.createElement('a'); link.href = encodeURI(csv); link.download = `${name}_vitals.csv`; link.click();
+            };
+
+            return (
+                <>
+                    <div className="page-header">
+                        <div><h1 className="page-title">健康記録</h1><p className="page-subtitle">{isPatient ? 'バイタルサインを記録・確認' : '患者のバイタルデータを確認'}</p></div>
+                        {isPatient && <div style={{ display: 'flex', gap: '0.75rem' }}>
+                            <button className="btn btn-secondary" onClick={exportCSV}><Icon name="download" />CSV</button>
+                            <button className="btn btn-primary" onClick={() => setShow(true)}><Icon name="plus" />新規記録</button>
+                        </div>}
+                    </div>
+
+                    {/* Staff View: Patient selector and data table */}
+                    {!isPatient && (
+                        <>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                                {patients.map(p => (
+                                    <button key={p.id} onClick={() => setSelectedPatient(selectedPatient === p.id ? null : p.id)} style={{
+                                        padding: '0.75rem 1.25rem', borderRadius: 'var(--radius-lg)',
+                                        border: selectedPatient === p.id ? '2px solid var(--primary-500)' : '1px solid var(--neutral-200)',
+                                        background: selectedPatient === p.id ? 'var(--primary-50)' : 'var(--bg-card)',
+                                        fontWeight: 500, cursor: 'pointer'
+                                    }}>
+                                        <span style={{ marginRight: '0.5rem' }}>👤</span>{p.name}
+                                    </button>
+                                ))}
+                            </div>
+                            {selectedPatient && (() => {
+                                const patient = patients.find(p => p.id === selectedPatient);
+                                const patientRecords = getPatientRecords(selectedPatient);
+                                return <PatientDataTable records={patientRecords} patientName={patient?.name} onExport={() => exportPatientCSV(selectedPatient, patient?.name)} />;
+                            })()}
+                        </>
+                    )}
+
+                    {/* Chart */}
+                    {last7.length > 0 && isPatient && (
+                        <div className="line-chart-container">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                <h4 style={{ fontWeight: 600 }}>バイタル推移（過去7日）</h4>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                                {tabs.map(tab => {
+                                    const isActive = visibleTabs.includes(tab.id);
+                                    return (
+                                        <button key={tab.id} onClick={() => toggleTab(tab.id)} style={{
+                                            padding: '0.5rem 1rem', borderRadius: 'var(--radius-lg)',
+                                            border: isActive ? `2px solid ${tab.colors[0]}` : '1px solid var(--neutral-200)',
+                                            background: isActive ? `${tab.colors[0]}15` : 'var(--bg-card)',
+                                            color: isActive ? tab.colors[0] : 'var(--text-muted)',
+                                            fontWeight: 500, fontSize: '0.875rem', cursor: 'pointer',
+                                            display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: isActive ? 1 : 0.5
+                                        }}>
+                                            <span style={{ width: 10, height: 10, borderRadius: '50%', background: tab.colors[0] }} />
+                                            {tab.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <LineChart data={last7} visibleTabs={visibleTabs} metrics={metrics} />
+                        </div>
+                    )}
+
+                    {/* Input Modal with Drum Picker */}
+                    <Modal show={show} onClose={() => setShow(false)} title="健康データを記録">
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>日付</label>
+                            <input className="input" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+                            <DrumPicker label="血圧（上）" unit="mmHg" value={form.bloodPressureHigh} onChange={v => setForm({ ...form, bloodPressureHigh: v })} min={80} max={200} step={1} />
+                            <DrumPicker label="血圧（下）" unit="mmHg" value={form.bloodPressureLow} onChange={v => setForm({ ...form, bloodPressureLow: v })} min={40} max={120} step={1} />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <DrumPicker label="脈拍" unit="bpm" value={form.pulse} onChange={v => setForm({ ...form, pulse: v })} min={40} max={150} step={1} />
+                            <DrumPicker label="体温" unit="°C" value={form.temperature} onChange={v => setForm({ ...form, temperature: v })} min={35.0} max={40.0} step={0.1} />
+                            <DrumPicker label="体重" unit="kg" value={form.weight} onChange={v => setForm({ ...form, weight: v })} min={30} max={120} step={0.1} />
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                            <button className="btn btn-secondary" onClick={() => setShow(false)}>キャンセル</button>
+                            <button className="btn btn-primary" onClick={submit}>保存</button>
+                        </div>
+                    </Modal>
+
+                    {/* Records Cards (Patient View) */}
+                    {isPatient && (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '1rem' }}>
+                            {records.map(r => (
+                                <div key={r.id} className="card">
+                                    <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1rem', paddingBottom: '0.75rem', borderBottom: '1px solid var(--neutral-100)' }}>{r.date}</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '0.75rem' }}>
+                                        <div><span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>血圧</span><div style={{ fontWeight: 600 }}>{r.bloodPressureHigh}/{r.bloodPressureLow}</div></div>
+                                        <div><span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>脈拍</span><div style={{ fontWeight: 600 }}>{r.pulse} bpm</div></div>
+                                        <div><span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>体温</span><div style={{ fontWeight: 600 }}>{r.temperature}°C</div></div>
+                                        <div><span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>体重</span><div style={{ fontWeight: 600 }}>{r.weight} kg</div></div>
+                                    </div>
+                                    {r.notes && <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--neutral-100)', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{r.notes}</div>}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </>
+            );
+        }
+
+        // Appointments
+        function Appointments() {
+            const { getAppointments, addAppointment, updateAppointment, getContacts, isPatient, data } = useApp();
+            const apts = getAppointments(); const contacts = getContacts(); const [show, setShow] = useState(false);
+            const [form, setForm] = useState({ targetId: '', date: '', time: '', type: '定期診察', notes: '' });
+            const submit = (e) => { e.preventDefault(); addAppointment({ patientId: isPatient ? undefined : form.targetId, staffId: isPatient ? form.targetId : undefined, ...form }); setForm({ targetId: '', date: '', time: '', type: '定期診察', notes: '' }); setShow(false); };
+            const getName = (a) => { const t = isPatient ? data.staff.find(s => s.id === a.staffId) : data.patients.find(p => p.id === a.patientId); return t?.name || '不明'; };
+            const scheduled = apts.filter(a => a.status === 'scheduled'); const past = apts.filter(a => a.status !== 'scheduled');
+            return (<><div className="page-header"><div><h1 className="page-title">予約管理</h1></div><button className="btn btn-primary" onClick={() => setShow(true)}><Icon name="plus" />新規予約</button></div>
+                <Modal show={show} onClose={() => setShow(false)} title="予約を作成"><form onSubmit={submit}><div style={{ marginBottom: '1rem' }}><label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>{isPatient ? '担当者' : '患者'}</label><select className="input" value={form.targetId} onChange={e => setForm({ ...form, targetId: e.target.value })} required><option value="">選択してください</option>{contacts.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}</select></div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}><div><label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>日付</label><input className="input" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required /></div>
+                        <div><label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>時間</label><input className="input" type="time" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} required /></div></div>
+                    <div style={{ marginBottom: '1rem' }}><label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>種類</label><select className="input" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}><option>定期診察</option><option>リハビリ</option><option>検査</option><option>相談</option></select></div>
+                    <div style={{ marginBottom: '1rem' }}><label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>備考</label><input className="input" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
+                    <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}><button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>キャンセル</button><button type="submit" className="btn btn-primary">作成</button></div></form></Modal>
+                <h3 style={{ marginBottom: '1rem', fontWeight: 600 }}>予定</h3><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '1rem', marginBottom: '2rem' }}>{scheduled.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>予約なし</p> : scheduled.map(a => (<div key={a.id} className="card"><div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}><span className="badge badge-primary">予定</span><span style={{ fontWeight: 500 }}>{a.type}</span></div>
+                    <div style={{ marginBottom: '0.75rem' }}><div style={{ fontWeight: 500 }}>{a.date}</div><div style={{ color: 'var(--primary-600)' }}>{a.time}</div></div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}><div className="avatar" style={{ width: 28, height: 28, fontSize: '0.7rem' }}>{getName(a).charAt(0)}</div><span>{getName(a)}</span></div>
+                    {!isPatient && <div style={{ display: 'flex', gap: '0.5rem' }}><button className="btn btn-sm btn-secondary" onClick={() => updateAppointment(a.id, { status: 'completed' })}><Icon name="check" />完了</button><button className="btn btn-sm btn-danger" onClick={() => updateAppointment(a.id, { status: 'cancelled' })}><Icon name="x" />キャンセル</button></div>}</div>))}</div>
+                {past.length > 0 && <><h3 style={{ marginBottom: '1rem', fontWeight: 600 }}>過去の予約</h3><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '1rem' }}>{past.map(a => (<div key={a.id} className="card" style={{ opacity: 0.7 }}><div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}><span className={`badge ${a.status === 'completed' ? 'badge-success' : 'badge-error'}`}>{a.status === 'completed' ? '完了' : 'キャンセル'}</span><span>{a.type}</span></div><div>{a.date} {a.time}</div></div>))}</div></>}</>);
+        }
+
+        // Rehab Menu
+        function RehabMenu() {
+            const { getRehabMenus, addRehabMenu, toggleRehabProgress, isPatient } = useApp();
+            const menus = getRehabMenus(); const [show, setShow] = useState(false);
+            const [form, setForm] = useState({ patientId: 'p1', name: '', description: '', frequency: '', duration: '' });
+            const today = new Date().toISOString().split('T')[0];
+            const submit = (e) => { e.preventDefault(); addRehabMenu(form); setForm({ patientId: 'p1', name: '', description: '', frequency: '', duration: '' }); setShow(false); };
+            const getProgress = (m) => { const done = m.progress.filter(p => p.completed).length; return Math.min(100, Math.round((done / 7) * 100)); };
+            const isDoneToday = (m) => m.progress.find(p => p.date === today)?.completed;
+            return (<><div className="page-header"><div><h1 className="page-title">リハビリメニュー</h1></div>{!isPatient && <button className="btn btn-primary" onClick={() => setShow(true)}><Icon name="plus" />メニュー追加</button>}</div>
+                <Modal show={show} onClose={() => setShow(false)} title="リハビリメニュー追加"><form onSubmit={submit}><div style={{ marginBottom: '1rem' }}><label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>メニュー名</label><input className="input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required /></div>
+                    <div style={{ marginBottom: '1rem' }}><label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>説明</label><textarea className="input" rows="3" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} required /></div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}><div><label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>頻度</label><input className="input" placeholder="1日3回" value={form.frequency} onChange={e => setForm({ ...form, frequency: e.target.value })} required /></div>
+                        <div><label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>時間</label><input className="input" placeholder="各20秒" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} required /></div></div>
+                    <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}><button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>キャンセル</button><button type="submit" className="btn btn-primary">追加</button></div></form></Modal>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(340px,1fr))', gap: '1.5rem' }}>{menus.map(m => (<div key={m.id} className="card"><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}><h3 style={{ fontWeight: 600 }}>{m.name}</h3><span className="badge badge-success">実施中</span></div>
+                    <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8125rem', color: 'var(--text-muted)', marginBottom: '1rem' }}><span>{m.frequency}</span><span>{m.duration}</span></div>
+                    <div style={{ padding: '1rem', background: 'var(--neutral-50)', borderRadius: 'var(--radius-lg)', fontSize: '0.9375rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>{m.description}</div>
+                    <div style={{ marginBottom: '1rem' }}><div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem', marginBottom: '0.5rem' }}><span>週間達成率</span><span style={{ fontWeight: 600 }}>{getProgress(m)}%</span></div><div className="progress-bar"><div className="progress-fill" style={{ width: `${getProgress(m)}%` }} /></div></div>
+                    {isPatient && <button className={`btn ${isDoneToday(m) ? 'btn-secondary' : 'btn-primary'}`} style={{ width: '100%' }} onClick={() => toggleRehabProgress(m.id)}>{isDoneToday(m) ? <><Icon name="check" />本日完了済み</> : <><Icon name="plus" />今日の分を記録</>}</button>}</div>))}</div></>);
+        }
+
+        // App
+        function App() {
+            const { user } = useApp(); const [page, setPage] = useState('dashboard');
+            if (!user) return <Login />;
+            const pages = { dashboard: Dashboard, messages: Messages, health: HealthRecords, appointments: Appointments, rehab: RehabMenu };
+            const Page = pages[page] || Dashboard;
+            return <Layout page={page} setPage={setPage}><Page /></Layout>;
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<AppProvider><App /></AppProvider>);
+    </script>
+</body>
+
+</html>

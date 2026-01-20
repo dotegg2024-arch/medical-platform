@@ -1,0 +1,214 @@
+rules_version = '2';
+
+/**
+ * Firestore セキュリティルール
+ * 3省2ガイドライン準拠 - 医療情報システム向け
+ * 
+ * ロールベースアクセス制御（RBAC）を実装
+ * - patient: 患者（自分のデータのみアクセス可）
+ * - staff: 医療従事者（担当患者のデータにアクセス可）
+ * - admin: 管理者（全データにアクセス可）
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ========================================
+    // ヘルパー関数
+    // ========================================
+    
+    // 認証済みユーザーかどうか
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // ユーザーのロールを取得
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    // 管理者かどうか
+    function isAdmin() {
+      return isSignedIn() && getUserRole() == 'admin';
+    }
+    
+    // 医療従事者かどうか
+    function isStaff() {
+      return isSignedIn() && (getUserRole() == 'staff' || getUserRole() == 'admin');
+    }
+    
+    // 患者かどうか
+    function isPatient() {
+      return isSignedIn() && getUserRole() == 'patient';
+    }
+    
+    // 自分自身かどうか
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    // 医療従事者が担当している患者かどうか
+    function isAssignedPatient(patientId) {
+      let staffDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return patientId in staffDoc.data.patients;
+    }
+    
+    // 患者の担当チームに含まれているかどうか
+    function isInPatientTeam(patientId) {
+      let patientDoc = get(/databases/$(database)/documents/users/$(patientId));
+      return request.auth.uid in patientDoc.data.team;
+    }
+    
+    // ========================================
+    // ユーザーコレクション
+    // ========================================
+    match /users/{userId} {
+      // 読み取り: 自分自身、担当医療従事者、または管理者
+      allow read: if isOwner(userId) 
+                  || isAdmin() 
+                  || (isStaff() && isAssignedPatient(userId))
+                  || (isPatient() && isInPatientTeam(userId));
+      
+      // 作成: 管理者のみ（ユーザー登録はCloud Functions経由）
+      allow create: if isAdmin();
+      
+      // 更新: 自分自身（プロフィール）または管理者
+      allow update: if isOwner(userId) || isAdmin();
+      
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+    
+    // ========================================
+    // 健康記録コレクション
+    // ========================================
+    match /healthRecords/{recordId} {
+      // 読み取り: 患者本人、担当医療従事者、または管理者
+      allow read: if isSignedIn() && (
+        resource.data.patientId == request.auth.uid ||
+        isAdmin() ||
+        (isStaff() && isAssignedPatient(resource.data.patientId))
+      );
+      
+      // 作成: 患者本人（自分の記録のみ）または管理者
+      allow create: if isSignedIn() && (
+        (isPatient() && request.resource.data.patientId == request.auth.uid) ||
+        isAdmin()
+      );
+      
+      // 更新: 患者本人（自分の記録のみ）または管理者
+      allow update: if isSignedIn() && (
+        (isPatient() && resource.data.patientId == request.auth.uid) ||
+        isAdmin()
+      );
+      
+      // 削除: 管理者のみ（データ保全のため）
+      allow delete: if isAdmin();
+    }
+    
+    // ========================================
+    // 予約コレクション
+    // ========================================
+    match /appointments/{appointmentId} {
+      // 読み取り: 関係者（患者・医療従事者）または管理者
+      allow read: if isSignedIn() && (
+        resource.data.patientId == request.auth.uid ||
+        resource.data.staffId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // 作成: 認証済みユーザー
+      allow create: if isSignedIn() && (
+        request.resource.data.patientId == request.auth.uid ||
+        request.resource.data.staffId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // 更新: 関係者または管理者
+      allow update: if isSignedIn() && (
+        resource.data.patientId == request.auth.uid ||
+        resource.data.staffId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+    
+    // ========================================
+    // メッセージコレクション
+    // ========================================
+    match /messages/{messageId} {
+      // 読み取り: 送信者または受信者
+      allow read: if isSignedIn() && (
+        resource.data.senderId == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // 作成: 認証済みユーザー（自分が送信者として）
+      allow create: if isSignedIn() && 
+        request.resource.data.senderId == request.auth.uid;
+      
+      // 更新: 受信者（既読フラグのみ）または管理者
+      allow update: if isSignedIn() && (
+        (resource.data.receiverId == request.auth.uid && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])) ||
+        isAdmin()
+      );
+      
+      // 削除: 管理者のみ
+      allow delete: if isAdmin();
+    }
+    
+    // ========================================
+    // リハビリメニューコレクション
+    // ========================================
+    match /rehabMenus/{menuId} {
+      // 読み取り: 患者本人、担当医療従事者、または管理者
+      allow read: if isSignedIn() && (
+        resource.data.patientId == request.auth.uid ||
+        isAdmin() ||
+        (isStaff() && isAssignedPatient(resource.data.patientId))
+      );
+      
+      // 作成: 医療従事者（担当患者のみ）または管理者
+      allow create: if isSignedIn() && (
+        (isStaff() && isAssignedPatient(request.resource.data.patientId)) ||
+        isAdmin()
+      );
+      
+      // 更新: 患者本人（進捗のみ）、担当医療従事者、または管理者
+      allow update: if isSignedIn() && (
+        (resource.data.patientId == request.auth.uid && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['progress'])) ||
+        (isStaff() && isAssignedPatient(resource.data.patientId)) ||
+        isAdmin()
+      );
+      
+      // 削除: 担当医療従事者または管理者
+      allow delete: if isSignedIn() && (
+        (isStaff() && isAssignedPatient(resource.data.patientId)) ||
+        isAdmin()
+      );
+    }
+    
+    // ========================================
+    // 監査ログコレクション（読み取り専用）
+    // ========================================
+    match /audit_logs/{logId} {
+      // 読み取り: 管理者のみ
+      allow read: if isAdmin();
+      
+      // 書き込み: Cloud Functions経由のみ（クライアントからは不可）
+      allow write: if false;
+    }
+    
+    // ========================================
+    // その他のコレクションはデフォルト拒否
+    // ========================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

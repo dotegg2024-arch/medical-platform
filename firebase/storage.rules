@@ -1,0 +1,65 @@
+rules_version = '2';
+
+/**
+ * Cloud Storage セキュリティルール
+ * 医療情報システム向け - ファイルアップロード制御
+ */
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // 認証済みユーザーかどうか
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // ファイルサイズ制限（10MB）
+    function isValidSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+    
+    // 許可されたファイルタイプ
+    function isValidType() {
+      return request.resource.contentType.matches('image/.*') ||
+             request.resource.contentType.matches('application/pdf') ||
+             request.resource.contentType.matches('text/.*');
+    }
+    
+    // ユーザー別のストレージ
+    match /users/{userId}/{allPaths=**} {
+      // 読み取り: 本人のみ
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      
+      // 書き込み: 本人のみ、サイズ・タイプ制限あり
+      allow write: if isSignedIn() && 
+                   request.auth.uid == userId && 
+                   isValidSize() && 
+                   isValidType();
+    }
+    
+    // 患者の医療ファイル
+    match /patients/{patientId}/{allPaths=**} {
+      // 読み取り: 本人または担当医療従事者
+      allow read: if isSignedIn() && (
+        request.auth.uid == patientId ||
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)/patients/$(patientId))
+      );
+      
+      // 書き込み: 本人のみ
+      allow write: if isSignedIn() && 
+                   request.auth.uid == patientId && 
+                   isValidSize() && 
+                   isValidType();
+    }
+    
+    // バックアップディレクトリ（管理者のみ）
+    match /backups/{allPaths=**} {
+      allow read, write: if false; // Cloud Functions経由のみ
+    }
+    
+    // その他はデフォルト拒否
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
